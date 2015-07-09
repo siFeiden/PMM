@@ -17,11 +17,13 @@ public class PredicateFactory {
 	};
 
 	public static <T> Predicate<T> random() {
-		return (Predicate<T>) RANDOM;
+		@SuppressWarnings("unchecked")
+		Predicate<T> p = (Predicate<T>) RANDOM;
+		return p;
 	}
 
-	public static Predicate<PVector> mostProbable(final PVectorMatrix firstParams, final double firstWeight,
-	                                              final PVectorMatrix secondParams, final double secondWeight) {
+	static Predicate<PVector> mostProbable(final PVectorMatrix firstParams, final double firstWeight,
+	                                       final PVectorMatrix secondParams, final double secondWeight) {
 		return new Predicate<PVector>() {
 			MultivariateGaussian gaussian = new MultivariateGaussian();
 

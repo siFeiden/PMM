@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class RandomDataPointGenerator {
+public class RandomDatapointGenerator {
 
 	public enum LatentState {
 		HOME(50.7653773, 6.0724425),
