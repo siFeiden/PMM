@@ -1,4 +1,4 @@
-package com.pmm;
+package com.pmm.loc;
 
 import java.util.Date;
 

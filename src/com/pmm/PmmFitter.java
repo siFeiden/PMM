@@ -1,13 +1,15 @@
 package com.pmm;
 
+import com.pmm.loc.DataPoint;
 import jMEF.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
 class PmmFitter {
 
-	private static final int NUM_ITERATIONS = 10;
+	private static final int NUM_ITERATIONS = 100;
 
 	private List<DataPoint> locations;
 
@@ -16,7 +18,7 @@ class PmmFitter {
 		if ( locations == null || locations.size() < 2 )
 			throw new IllegalArgumentException("locations must contain > 1 point");
 
-		this.locations = locations;
+		this.locations = new ArrayList<>(locations);
 	}
 
 	/**
@@ -31,7 +33,7 @@ class PmmFitter {
 
 		// random initial distribution
 		Vector<PVector>[] clusters = assignPointsToLatentStates(points, PredicateFactory.<PVector>random());
-
+//		System.out.println("home size: " + clusters[0].size());
 
 		MixtureModel mm = null;
 		for ( int i = 0; i < NUM_ITERATIONS; i++ ) {
@@ -42,8 +44,10 @@ class PmmFitter {
 			clusters = assignPointsToLatentStates(points,
 					PredicateFactory.mostProbable(homeGaussian, mm.weight[0], workGaussian, mm.weight[1]));
 
-			if ( clusters[0].size() == 0 || clusters[1].size() == 0 )
+			if ( clusters[0].size() == 0 || clusters[1].size() == 0 ) {
+//				System.out.println("diverged @ " + i);
 				throw new AlgorithmDivergedException();
+			}
 		}
 
 
@@ -128,17 +132,17 @@ class PmmFitter {
 	 * @return MixtureModel fitted to the clusters using MLE
 	 */
 	MixtureModel fitModelParams(PVector[] points, Vector<PVector>[] clusters) {
-//		MixtureModel mm = BregmanSoftClustering.initialize(clusters, new MultivariateGaussian());
-//		mm = BregmanSoftClustering.run(points, mm);
+		MixtureModel result = BregmanSoftClustering.initialize(clusters, new MultivariateGaussian());
+		result = BregmanSoftClustering.run(points, result);
 
 
-		MixtureModel home = doClustering(clusters[0].toArray(new PVector[clusters[0].size()]), clusters[0]);
-		MixtureModel work = doClustering(clusters[1].toArray(new PVector[clusters[1].size()]), clusters[1]);
-
-		MixtureModel result = new MixtureModel(2);
-		result.weight[0] = result.weight[1] = 0.5;
-		result.param[0] = home.param[0];
-		result.param[1] = work.param[0];
+//		MixtureModel home = doClustering(clusters[0].toArray(new PVector[clusters[0].size()]), clusters[0]);
+//		MixtureModel work = doClustering(clusters[1].toArray(new PVector[clusters[1].size()]), clusters[1]);
+//
+//		MixtureModel result = new MixtureModel(2);
+//		result.weight[0] = result.weight[1] = 0.5;
+//		result.param[0] = home.param[0];
+//		result.param[1] = work.param[0];
 
 		return result;
 	}

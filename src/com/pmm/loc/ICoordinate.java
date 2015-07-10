@@ -1,4 +1,4 @@
-package com.pmm;
+package com.pmm.loc;
 
 public interface ICoordinate {
 	double getLatitude();

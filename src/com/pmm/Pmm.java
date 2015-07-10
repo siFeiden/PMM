@@ -1,5 +1,6 @@
 package com.pmm;
 
+import com.pmm.loc.DataPoint;
 import jMEF.MultivariateGaussian;
 import jMEF.PVector;
 import jMEF.PVectorMatrix;
@@ -24,14 +25,15 @@ public class Pmm {
 	}
 
 	public double estimateNextLocationProbability(DataPoint nextLocation) {
-		double bestEstimation = Double.MIN_VALUE;
+		EstimationStrategy strategy = EstimationStrategy.getInstance();
+
 
 		for ( FittingParams param : fittedParams ) {
 			double currEstimation = estimateFromFit(param, nextLocation);
-			bestEstimation = Math.max(bestEstimation, currEstimation);
+			strategy.nextEstimate(currEstimation);
 		}
 
-		return bestEstimation;
+		return strategy.get(fittedParams.size());
 	}
 
 	private void fillFittingParams() {
@@ -41,7 +43,7 @@ public class Pmm {
 				FittingParams fit = fitter.fit();
 				fittedParams.add(fit);
 			} catch ( PmmFitter.AlgorithmDivergedException e ) {
-				System.out.println("Pmm fitting diverged");
+//				System.out.println("Pmm fitting diverged");
 			}
 		}
 	}
@@ -67,12 +69,21 @@ public class Pmm {
 		return r;
 	}
 
-	protected static class FittingParams {
+	public PVectorMatrix getFirstHomeGaussian() {
+		System.out.println("params size " + fittedParams.size());
+		return fittedParams.get(0).homeGaussian;
+	}
+
+	public PVectorMatrix getFirstWorkGaussian() {
+		return fittedParams.get(0).workGaussian;
+	}
+
+	static class FittingParams {
 		PVectorMatrix homeGaussian, workGaussian;
 		double homeTimeMean, homeTimeVariance;
 		double workTimeMean, workTimeVariance;
 
-		protected FittingParams(PVectorMatrix homeGaussian, PVectorMatrix workGaussian, double homeTimeMean, double homeTimeVariance, double workTimeMean, double workTimeVariance) {
+		FittingParams(PVectorMatrix homeGaussian, PVectorMatrix workGaussian, double homeTimeMean, double homeTimeVariance, double workTimeMean, double workTimeVariance) {
 			this.homeGaussian = homeGaussian;
 			this.workGaussian = workGaussian;
 			this.homeTimeMean = homeTimeMean;

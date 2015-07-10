@@ -1,4 +1,4 @@
-package com.pmm;
+package com.pmm.loc;
 
 import io.github.benas.jpopulator.api.Populator;
 import io.github.benas.jpopulator.api.Randomizer;
@@ -8,11 +8,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class RandomDatapointGenerator {
+public class DatapointGenerator {
 
 	public enum LatentState {
 		HOME(50.7653773, 6.0724425),
-//		WORK(49.7778813, 6.6494598); // Trier
 		WORK(50.7793687, 6.0522158); // Aachen
 
 		private final double lat, lon;
@@ -23,14 +22,19 @@ public class RandomDatapointGenerator {
 		}
 	}
 
+	public static List<DataPoint> gowalla() {
+		List<List<DataPoint>> traj = GowallaUserLoader.readLocations(10);
+		return traj.get(2);
+	}
+
 	/**
 	 * Generate random DataPoints around the locations of the {@link LatentState}s.
 	 * @param radius radius of the spread of the points
-	 * @param nums the number of points to generate for each latent state,
+	 * @param nums the number of points to generateRandom for each latent state,
 	 *             i.e. nums[0] = 10 -> 10 points for first latent state.
 	 * @return list of the generated random DataPoints
 	 */
-	static List<DataPoint> generate(double radius, int... nums) {
+	public static List<DataPoint> generateRandom(double radius, int... nums) {
 		if ( nums == null  ) {
 			return null;
 		}
@@ -40,13 +44,13 @@ public class RandomDatapointGenerator {
 
 		List<DataPoint> points = new ArrayList<>();
 		for ( int i = 0; i < minIndex; i++ ) {
-			points.addAll(generate(states[i], nums[i], radius));
+			points.addAll(generateRandom(states[i], nums[i], radius));
 		}
 
 		return points;
 	}
 
-	static List<DataPoint> generate(LatentState state, int n, double radius) {
+	static List<DataPoint> generateRandom(LatentState state, int n, double radius) {
 		Populator populator = new PopulatorBuilder()
 				.registerRandomizer(DataPoint.class, double.class, "latitude", new DoubleRandomizer(state.lat, radius))
 				.registerRandomizer(DataPoint.class, double.class, "longitude", new DoubleRandomizer(state.lon, radius))
