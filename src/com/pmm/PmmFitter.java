@@ -1,6 +1,6 @@
 package com.pmm;
 
-import com.pmm.loc.DataPoint;
+import com.pmm.loc.Location;
 import jMEF.*;
 
 import java.util.ArrayList;
@@ -11,12 +11,12 @@ class PmmFitter {
 
 	private static final int NUM_ITERATIONS = 100;
 
-	private List<DataPoint> locations;
+	private List<Location> locations;
 
 
-	protected PmmFitter(List<DataPoint> locations) {
+	protected PmmFitter(List<Location> locations) {
 		if ( locations == null || locations.size() < 2 )
-			throw new IllegalArgumentException("locations must contain > 1 point");
+			throw new IllegalArgumentException("locations must contain more than 1 point");
 
 		this.locations = new ArrayList<>(locations);
 	}
@@ -28,7 +28,7 @@ class PmmFitter {
 	public Pmm.FittingParams fit() throws AlgorithmDivergedException {
 		PVector[] points = new PVector[locations.size()];
 		for ( int i = 0; i < points.length; i++ ) {
-			points[i] = convertDatapointToPVector(locations.get(i));
+			points[i] = convertLocationToPVector(locations.get(i));
 		}
 
 		// random initial distribution
@@ -78,22 +78,22 @@ class PmmFitter {
 	}
 
 	/**
-	 * Convert {@link DataPoint} to {@link PVector}
-	 * @param dataPoint the DataPoint to convert
+	 * Convert {@link Location} to {@link PVector}
+	 * @param location the Location to convert
 	 * @return 2-dimensional PVector with latitude as x-coordinate, longitude as y-coordinate
 	 */
-	private PVector convertDatapointToPVector(DataPoint dataPoint) {
-		if ( dataPoint == null )
+	private PVector convertLocationToPVector(Location location) {
+		if ( location == null )
 			return null;
 
 		PVector vector = new PVector(2);
-		vector.array[0] = dataPoint.getLatitude();
-		vector.array[1] = dataPoint.getLongitude();
-//		vector.array[2] = dataPoint.getLongTime();
+		vector.array[0] = location.getLatitude();
+		vector.array[1] = location.getLongitude();
+//		vector.array[2] = location.getLongTime();
 
-		PVectorWithTime v = new PVectorWithTime(2, dataPoint.getLongTime());
-		v.array[0] = dataPoint.getLatitude();
-		v.array[1] = dataPoint.getLongitude();
+		PVectorWithTime v = new PVectorWithTime(2, location.getLongTime());
+		v.array[0] = location.getLatitude();
+		v.array[1] = location.getLongitude();
 
 
 		return v;

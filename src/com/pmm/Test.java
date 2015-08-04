@@ -1,47 +1,61 @@
 package com.pmm;
 
-import com.pmm.loc.DataPoint;
-import com.pmm.loc.DatapointGenerator;
-import jMEF.PVectorMatrix;
+import com.pmm.loc.Location;
+import com.pmm.loc.LocationGenerator;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
-public class Test {
+class Test {
+
+	public static final int MAXIMUM_TRAJECTORIES = 10;
+
 
 	public static void main(String[] args) {
-//		List<DataPoint> locations = DatapointGenerator.generateRandom(4e-3, 10, 10);
-		List<DataPoint> locations = DatapointGenerator.gowalla();
+//		List<Location> locations = LocationGenerator.generateRandom(4e-3, 10, 10);
+//		List<Location> locations = LocationGenerator.singleGowalla();
+		List<List<Location>> gowallaList = LocationGenerator.gowalla(MAXIMUM_TRAJECTORIES);
+		System.out.println("num trajs: " + gowallaList.size());
 
+		List<Double> estimationsGiven = new ArrayList<>();
 
-		final Pmm pmm = new Pmm(locations);
-		final PVectorMatrix pvm = pmm.getFirstHomeGaussian();
+		long startStamp = System.currentTimeMillis();
+		for ( List<Location> traj : gowallaList ) {
+			Location last = traj.remove(traj.size() - 1);
 
-/*		Mapper mapper = new Mapper() {
-			@Override
-			public double f(double x, double y) {
-				PVector v = new PVector(2);
-				v.array[0] = x;
-				v.array[1] = y;
-
-				MultivariateGaussian g = new MultivariateGaussian();
-				return g.density(v, pvm);
+			try {
+				Pmm pmm = new Pmm(traj);
+				estimationsGiven.add(pmm.estimateNextLocationProbability(last));
+			} catch ( Pmm.FittingFailedException e ) {
+				// ignore in test
 			}
-		};
+		}
+		long durationMillis = System.currentTimeMillis() - startStamp;
 
-		// Define range and precision for the function to plot
-		Range range = new Range(-150, 150);
-		int steps = 50;
+		System.out.println("fitting finished");
+		System.out.printf("took %.2f seconds,\n%.2f s in average\n",
+				durationMillis / 1e3,
+				durationMillis / gowallaList.size() / 1e3);
 
-		// Create a surface drawing that function
-		Shape surface = Builder.buildOrthonormal(new OrthonormalGrid(range, steps, range, steps), mapper);
-		surface.setColorMapper(new ColorMapper(new ColorMapRainbow(), surface.getBounds().getZmin(), surface.getBounds().getZmax(), new Color(1, 1, 1, .5f)));
-		surface.setFaceDisplayed(true);
-		surface.setWireframeDisplayed(false);
-		surface.setWireframeColor(Color.BLACK);
+		try ( FileWriter logger = new FileWriter("test.log") ) {
+			for ( double estimation : estimationsGiven ) {
+				logger.write(Double.toString(estimation) + "\n");
+			}
+		} catch ( IOException e ) {
+			e.printStackTrace();
+		}
 
-		// Create a chart and add the surface
-		Chart chart = new Chart(Quality.Advanced);
-		chart.getScene().getGraph().add(surface);
-		ChartLauncher.openChart(chart); */
+		System.out.println("avg. given prob.: " + avg(estimationsGiven));
+	}
+
+	private static double avg(List<Double> values) {
+		double avg = 0;
+		for ( double estimation : values ) {
+			avg += estimation;
+		}
+		avg /= values.size();
+		return avg;
 	}
 }

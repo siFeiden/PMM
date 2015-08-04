@@ -2,15 +2,18 @@ package com.pmm;
 
 public abstract class EstimationStrategy {
 
-	abstract void nextEstimate(double newEstimate);
+	abstract void nextEstimate(double nextEstimate);
+
 	abstract double get(int numFits);
+
 
 	private EstimationStrategy() {
 	}
 
 	static EstimationStrategy getInstance() {
-		return new EstimationStrategy.Max();
+		return new Normalize();
 	}
+
 
 	static class Max extends EstimationStrategy {
 		double estimate = Double.MIN_VALUE;
@@ -37,6 +40,23 @@ public abstract class EstimationStrategy {
 		@Override
 		double get(int numFits) {
 			return estimate / numFits;
+		}
+	}
+
+	static class Normalize extends EstimationStrategy {
+		double max = Double.MIN_VALUE, sum = 0;
+
+		@Override
+		void nextEstimate(double nextEstimate) {
+			if ( nextEstimate > max )
+				max = nextEstimate;
+
+			sum += nextEstimate;
+		}
+
+		@Override
+		double get(int numFits) {
+			return Math.min(max / sum, 1.0);
 		}
 	}
 }

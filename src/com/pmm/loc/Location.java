@@ -2,16 +2,16 @@ package com.pmm.loc;
 
 import java.util.Date;
 
-public class DataPoint implements ICoordinate
+public class Location implements ICoordinate
 {
     private double latitude;
     private double longitude;
     private Date time;
 
-	public DataPoint() {
+	public Location() {
 	}
 
-	public DataPoint(double latitude, double longitude, Date date) {
+	public Location(double latitude, double longitude, Date date) {
 		this.latitude = latitude;
 		this.longitude = longitude;
 		this.time = date;
@@ -54,11 +54,11 @@ public class DataPoint implements ICoordinate
     }
 
     /**
-     * Creates a DataPoint from a String of the form "time lat lon" where time is optional and in the format of {@link Date#getTime()}.
-     * @param serial String representation of a DataPoint
-     * @return DataPoint representing the input
+     * Creates a Location from a String of the form "time lat lon" where time is optional and in the format of {@link Date#getTime()}.
+     * @param serial String representation of a Location
+     * @return Location representing the input
      */
-    public static DataPoint fromString(String serial) {
+    public static Location fromString(String serial) {
         if ( serial == null )
             return null;
 
@@ -75,7 +75,7 @@ public class DataPoint implements ICoordinate
             lon  = Double.parseDouble(split[2]);
         }
 
-        return new DataPoint(lat, lon, time);
+        return new Location(lat, lon, time);
     }
 
     @Override
@@ -83,11 +83,11 @@ public class DataPoint implements ICoordinate
         if ( this == o ) return true;
         if ( o == null || getClass() != o.getClass() ) return false;
 
-        DataPoint dataPoint = (DataPoint) o;
+        Location location = (Location) o;
 
-        if ( dataPoint.latitude != latitude ) return false;
-        if ( dataPoint.longitude != longitude ) return false;
-        return time.equals(dataPoint.time);
+        if ( location.latitude != latitude ) return false;
+        if ( location.longitude != longitude ) return false;
+        return time.equals(location.time);
     }
 
     @Override
@@ -104,7 +104,7 @@ public class DataPoint implements ICoordinate
 
 	@Override
 	public String toString() {
-//		return "DataPoint{" +
+//		return "Location{" +
 //				"latitude=" + latitude +
 //				", longitude=" + longitude +
 //				", time=" + time +

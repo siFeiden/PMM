@@ -30,7 +30,7 @@ public class Timestamps {
 		int n = stamps.length;
 		double angles[] = new double[n];
 
-		// extract hh::mm from timestamps und transform to angles in a circle
+		// extract hh:mm from timestamps und transform to angles in a circle
 		for (int i = 0; i < n; i++) {
 			angles[i] = toRadians(
 				getField(stamps[i], Calendar.HOUR_OF_DAY) * 15 + // split circle in 24h, 1h is 15°
@@ -47,6 +47,7 @@ public class Timestamps {
 		cosSum /= n;
 
 		double meanAngle = atan2(sinSum, cosSum);
+		meanAngle += Math.PI; // transform from [-pi, pi] to [0, 2*pi]
 		double meanHour = toDegrees(meanAngle) / 15;
 
 		/* This is an approx. to the variance of the random variable meanAngle
@@ -62,10 +63,9 @@ public class Timestamps {
 		return new double[] { meanHour, variance };
 	}
 
+	private static Calendar c = Calendar.getInstance();
 	private static int getField(long stamp, int field) {
-		Calendar c = Calendar.getInstance();
 		c.setTimeInMillis(stamp);
-
 		return c.get(field);
 	}
 }

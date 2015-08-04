@@ -13,9 +13,9 @@ class GowallaUserLoader {
 	private static final String DATASET_TRAJECTORY_PATH = "./SanFrancisco_ActiveUserCheckIns.csv";
 
 
-	protected static List<List<DataPoint>> readLocations(int maximumTrajectories) {
+	protected static List<List<Location>> readLocations(int maximumTrajectories) {
 		try ( Scanner scanner = new Scanner(new File(DATASET_TRAJECTORY_PATH)) ) {
-			Map<String, List<DataPoint>> traj = new HashMap<>();
+			Map<String, List<Location>> traj = new HashMap<>();
 
 			while ( scanner.hasNextLine() ) {
 				String line = scanner.nextLine();
@@ -25,7 +25,7 @@ class GowallaUserLoader {
 				double lat = Double.parseDouble(parts[2]);
 				double lon = Double.parseDouble(parts[3]);
 
-				List<DataPoint> l = traj.get(parts[0]);
+				List<Location> l = traj.get(parts[0]);
 				if ( l == null ) {
 					if ( traj.size() == maximumTrajectories )
 						break;
@@ -33,7 +33,7 @@ class GowallaUserLoader {
 					l = new ArrayList<>();
 					traj.put(parts[0], l);
 				}
-				l.add(new DataPoint(lat, lon, time));
+				l.add(new Location(lat, lon, time));
 
 			}
 
@@ -114,12 +114,12 @@ class GowallaUserLoader {
 				allTrajs.put(v[0], t);
 			}
 			
-			// create DataPoint from line
+			// create Location from line
 			Date time = DatatypeConverter.parseDateTime(v[1]).getTime();
 			double latitude  = Double.parseDouble(v[2]);
 			double longitude = Double.parseDouble(v[3]);
 			
-			DataPoint p = new DataPoint(time, latitude, longitude);
+			Location p = new Location(time, latitude, longitude);
 			t.addPoint(p);
 		}
 
