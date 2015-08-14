@@ -10,7 +10,7 @@ import java.util.List;
 
 class Test {
 
-	public static final int MAXIMUM_TRAJECTORIES = 10;
+	public static final int MAXIMUM_TRAJECTORIES = 100;
 
 
 	public static void main(String[] args) {
@@ -25,12 +25,8 @@ class Test {
 		for ( List<Location> traj : gowallaList ) {
 			Location last = traj.remove(traj.size() - 1);
 
-			try {
-				Pmm pmm = new Pmm(traj);
-				estimationsGiven.add(pmm.estimateNextLocationProbability(last));
-			} catch ( Pmm.FittingFailedException e ) {
-				// ignore in test
-			}
+			Pmm pmm = new Pmm(traj);
+			estimationsGiven.add(pmm.estimateNextLocationProbability(last));
 		}
 		long durationMillis = System.currentTimeMillis() - startStamp;
 

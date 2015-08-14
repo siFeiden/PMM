@@ -78,6 +78,10 @@ public class Location implements ICoordinate
         return new Location(lat, lon, time);
     }
 
+    public double[] latLonArray() {
+        return new double[] { latitude, longitude };
+    }
+
     @Override
     public boolean equals(Object o) {
         if ( this == o ) return true;

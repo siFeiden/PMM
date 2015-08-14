@@ -1,12 +1,10 @@
 package com.pmm;
 
-import jMEF.PVectorMatrix;
-
 public class GaussianPair {
-	public PVectorMatrix homeGaussian, workGaussian;
+	public Gaussian home, work;
 
-	public GaussianPair(PVectorMatrix homeGaussian, PVectorMatrix workGaussian) {
-		this.homeGaussian = homeGaussian;
-		this.workGaussian = workGaussian;
+	public GaussianPair(Gaussian home, Gaussian work) {
+		this.home = home;
+		this.work = work;
 	}
 }

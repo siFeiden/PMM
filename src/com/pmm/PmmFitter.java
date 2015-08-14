@@ -1,161 +1,111 @@
 package com.pmm;
 
+import Jama.Matrix;
 import com.pmm.loc.Location;
-import jMEF.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
 
 class PmmFitter {
 
 	private static final int NUM_ITERATIONS = 100;
 
-	private List<Location> locations;
+	private List<Location> homeCluster;
+	private List<Location> workCluster;
 
 
-	protected PmmFitter(List<Location> locations) {
-		if ( locations == null || locations.size() < 2 )
+	PmmFitter(List<Location> locations) {
+		if ( locations == null || locations.size() <= 1 )
 			throw new IllegalArgumentException("locations must contain more than 1 point");
 
-		this.locations = new ArrayList<>(locations);
+		this.homeCluster = new ArrayList<>(locations);
+		this.workCluster = new ArrayList<>();
 	}
 
 	/**
 	 * Use expectation maximization (EM) to find two latent states of some locations.
-	 * @throws AlgorithmDivergedException thrown if the EM diverges
 	 */
-	public Pmm.FittingParams fit() throws AlgorithmDivergedException {
-		PVector[] points = new PVector[locations.size()];
-		for ( int i = 0; i < points.length; i++ ) {
-			points[i] = convertLocationToPVector(locations.get(i));
-		}
-
+	public Pmm.FittingParams fit() {
 		// random initial distribution
-		Vector<PVector>[] clusters = assignPointsToLatentStates(points, PredicateFactory.<PVector>random());
-//		System.out.println("home size: " + clusters[0].size());
+		assignPointsToLatentStates(PredicateFactory.<Location>random());
 
-		MixtureModel mm = null;
+
+		GaussianPair fit = new GaussianPair(null, null);
 		for ( int i = 0; i < NUM_ITERATIONS; i++ ) {
-			mm = fitModelParams(points, clusters); // EM / MLE fitting
+			fit.home = fitModelParams(homeCluster); // EM / MLE fitting
+			fit.work = fitModelParams(workCluster);
 
-			final PVectorMatrix homeGaussian = (PVectorMatrix) mm.param[0];
-			final PVectorMatrix workGaussian = (PVectorMatrix) mm.param[1];
-			clusters = assignPointsToLatentStates(points,
-					PredicateFactory.mostProbable(homeGaussian, mm.weight[0], workGaussian, mm.weight[1]));
-
-			if ( clusters[0].size() == 0 || clusters[1].size() == 0 ) {
-//				System.out.println("diverged @ " + i);
-				throw new AlgorithmDivergedException();
-			}
+			assignPointsToLatentStates(PredicateFactory.mostProbable(fit.home, fit.work));
 		}
 
 
-		final PVectorMatrix homeGaussian = (PVectorMatrix) mm.param[0];
-		final PVectorMatrix workGaussian = (PVectorMatrix) mm.param[1];
-
-		long[] homeStamps = clusterToTimestampsArray(clusters[0]);
-		long[] workStamps = clusterToTimestampsArray(clusters[1]);
+		long[] homeStamps = clusterToTimestampsArray(homeCluster);
+		long[] workStamps = clusterToTimestampsArray(workCluster);
 
 		double[] homeMeanAndVar = Timestamps.circularMeanAndVariance(homeStamps);
 		double[] workMeanAndVar = Timestamps.circularMeanAndVariance(workStamps);
 
-		return new Pmm.FittingParams(
-				homeGaussian, workGaussian,
+		return new Pmm.FittingParams(fit,
 				homeMeanAndVar[0], homeMeanAndVar[1],
 				workMeanAndVar[0], workMeanAndVar[1]);
 	}
 
-	private long[] clusterToTimestampsArray(Vector<PVector> cluster) {
+	private long[] clusterToTimestampsArray(List<Location> cluster) {
 		long[] stamps = new long[cluster.size()];
 
 		for ( int i = 0; i < cluster.size(); i++ ) {
-			PVectorWithTime vt = (PVectorWithTime) cluster.get(i);
-			stamps[i] = vt.time;
+			stamps[i] = cluster.get(i).getLongTime();
 		}
 
 		return stamps;
 	}
 
 	/**
-	 * Convert {@link Location} to {@link PVector}
-	 * @param location the Location to convert
-	 * @return 2-dimensional PVector with latitude as x-coordinate, longitude as y-coordinate
-	 */
-	private PVector convertLocationToPVector(Location location) {
-		if ( location == null )
-			return null;
-
-		PVector vector = new PVector(2);
-		vector.array[0] = location.getLatitude();
-		vector.array[1] = location.getLongitude();
-//		vector.array[2] = location.getLongTime();
-
-		PVectorWithTime v = new PVectorWithTime(2, location.getLongTime());
-		v.array[0] = location.getLatitude();
-		v.array[1] = location.getLongitude();
-
-
-		return v;
-	}
-
-	/**
 	 * Group points into two clusters using a predicate.
-	 * Point p is assigned to cluster 0 if the predicate tests true, else to cluster 1.
-	 * @param points points to assign
+	 * Point p is assigned to homeCluster if the predicate tests true, else to workCluster.
 	 * @param categorizer used to assign points
-	 * @return clustering induced by categorizer
 	 */
-	Vector<PVector>[] assignPointsToLatentStates(PVector[] points, Predicate<PVector> categorizer) {
-		@SuppressWarnings("unchecked")
-		Vector<PVector>[] clusters = new Vector[2];
-		clusters[0] = new Vector<>();
-		clusters[1] = new Vector<>();
+	void assignPointsToLatentStates(Predicate<Location> categorizer) {
+		ArrayList<Location> all = new ArrayList<>(homeCluster);
+		all.addAll(workCluster);
 
-		for ( PVector point : points ) {
-			if ( categorizer.test(point) )
-				clusters[0].add(point);
+		homeCluster.clear();
+		workCluster.clear();
+
+		for ( Location l : all ) {
+			if ( categorizer.test(l) )
+				homeCluster.add(l);
 			else
-				clusters[1].add(point);
+				workCluster.add(l);
 		}
-
-//		System.out.println("sizes: " + clusters[0].size() + ", " + clusters[1].size());
-
-		return clusters;
 	}
 
 	/**
 	 * Expectation maximization for two clusters of points.
 	 * clusters should be a parition of points.
-	 * @param points all points
-	 * @param clusters index 0 is the cluster of points that belong to home, index 1 for work
-	 * @return MixtureModel fitted to the clusters using MLE
 	 */
-	MixtureModel fitModelParams(PVector[] points, Vector<PVector>[] clusters) {
-		MixtureModel result = BregmanSoftClustering.initialize(clusters, new MultivariateGaussian());
-		result = BregmanSoftClustering.run(points, result);
+	private Gaussian fitModelParams(List<Location> locations) {
+		int n = locations.size();
 
+		Matrix X = new Matrix(n, 2);
+		double latSum = 0, lonSum = 0;
+		int row = 0;
 
-//		MixtureModel home = doClustering(clusters[0].toArray(new PVector[clusters[0].size()]), clusters[0]);
-//		MixtureModel work = doClustering(clusters[1].toArray(new PVector[clusters[1].size()]), clusters[1]);
-//
-//		MixtureModel result = new MixtureModel(2);
-//		result.weight[0] = result.weight[1] = 0.5;
-//		result.param[0] = home.param[0];
-//		result.param[1] = work.param[0];
+		for ( Location l : locations ) {
+			latSum += l.getLatitude();
+			lonSum += l.getLongitude();
+			X.set(row, 0, l.getLatitude());
+			X.set(row, 1, l.getLongitude());
+			row++;
+		}
 
-		return result;
+		Matrix mean = new Matrix(1, 2);
+		mean.set(0, 0, latSum / n);
+		mean.set(0, 1, lonSum / n);
+
+		X.minusEquals(new Matrix(n, 1, 1).times(mean));
+		Matrix S = X.transpose().times(X).timesEquals(1.0 / (n - 1.0));
+
+		return new Gaussian(mean.transpose(), S);
 	}
-
-	@SafeVarargs
-	private final MixtureModel doClustering(PVector[] points, Vector<PVector>... clusters) {
-		MixtureModel model = BregmanSoftClustering.initialize(clusters, new MultivariateGaussian());
-		model = BregmanSoftClustering.run(points, model);
-		return model;
-	}
-
-	/**
-	 * Thrown by {@link #fit()} if the EM diverges.
-	 */
-	public static class AlgorithmDivergedException extends Throwable { }
 }

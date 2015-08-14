@@ -1,8 +1,7 @@
 package com.pmm;
 
-import jMEF.MultivariateGaussian;
-import jMEF.PVector;
-import jMEF.PVectorMatrix;
+import Jama.Matrix;
+import com.pmm.loc.Location;
 
 import java.util.Random;
 
@@ -22,23 +21,17 @@ public class PredicateFactory {
 		return p;
 	}
 
-	static Predicate<PVector> mostProbable(final PVectorMatrix firstParams, final double firstWeight,
-	                                       final PVectorMatrix secondParams, final double secondWeight) {
-		return new Predicate<PVector>() {
-			MultivariateGaussian gaussian = new MultivariateGaussian();
-
+	public static Predicate<Location> mostProbable(final Gaussian first, final Gaussian second) {
+		return new Predicate<Location>() {
 			@Override
-			public boolean test(PVector point) {
-				double firstDensity = firstWeight * gaussian.density(point, firstParams);
-				double secondDensity = secondWeight * gaussian.density(point, secondParams);
+			public boolean test(Location l) {
+				Matrix x = new Matrix(l.latLonArray(), 2);
+				double firstDensity = first.density(l.getLatitude(), l.getLongitude());
+				double secondDensity = second.density(l.getLatitude(), l.getLongitude());
 
 				return firstDensity > secondDensity;
 			}
 		};
-	}
-
-	public static Predicate<PVector> mostProbable(PVectorMatrix firstParams, PVectorMatrix secondParams) {
-		return mostProbable(firstParams, 1.0, secondParams, 1.0);
 	}
 
 }
