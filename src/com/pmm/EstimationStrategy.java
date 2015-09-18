@@ -1,6 +1,6 @@
 package com.pmm;
 
-public abstract class EstimationStrategy {
+abstract class EstimationStrategy {
 
 	abstract void nextEstimate(double nextEstimate);
 

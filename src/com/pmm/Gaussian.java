@@ -2,64 +2,88 @@ package com.pmm;
 
 import Jama.Matrix;
 
+import java.util.Objects;
+
 import static java.lang.Math.*;
 
+/**
+ * A two dimensional gaussian distribution with its density function.
+ */
 public class Gaussian {
-	/**
-	 * Mean of a gaussian
-	 * Must be a 2x1 matrix.
-	 */
-	Matrix m;
 
-	/**
-	 *  Covariance of a gaussian.
-	 *  Must be a 2x2 matrix.
-	 */
-	Matrix S;
+  /**
+   * Mean of a gaussian.
+   * Must be a 2x1 matrix.
+   */
+  private final Matrix mean;
+
+  /**
+   * Covariance of a gaussian.
+   * Must be a 2x2 matrix.
+   */
+  private final Matrix covariance;
 
 
-	public Gaussian(Matrix m, Matrix S) {
-		this.m = m;
-		this.S = S;
-	}
+  /**
+   * Create a gaussian with the specified parameters.
+   *
+   * @param mean       non null mean of the gaussian
+   * @param covariance non null covariance of the gaussian
+   * @throws NullPointerException if mean or covariance are null
+   */
+  public Gaussian(Matrix mean, Matrix covariance) {
+    Objects.requireNonNull(mean);
+    Objects.requireNonNull(covariance);
 
-	public double density(double x, double y) {
-		Matrix p = new Matrix(new double[] { x, y }, 2);
+    if ( mean.getColumnDimension() != 1 || mean.getRowDimension() != 2 ) {
+      throw new IllegalArgumentException("mean must be 2x1");
+    }
 
-		p.minusEquals(m);
-		Matrix inv;
-		try {
-			inv = S.inverse();
-		} catch ( RuntimeException e ) {
-			inv = Matrix.identity(2, 2);
-		}
-		Matrix a = p.transpose().times(inv.times(p));
-		double v1 = exp(-.5 * a.get(0, 0));
-		double v2 = sqrt(4 * PI * PI * S.det());
+    if ( covariance.getColumnDimension() != 2 || covariance.getRowDimension() != 2 ) {
+      throw new IllegalArgumentException("covariance must be 2x2");
+    }
 
-		return v1 / v2;
-	}
+    this.mean = mean;
+    this.covariance = covariance;
+  }
 
-	public void print() {
-		System.out.print("mean");
-		m.print(10, 5);
-		System.out.print("cov");
-		S.print(10, 5);
-	}
+  /**
+   * Calculates the density function of the gaussian.
+   *
+   * @param x first coordinate of the argument
+   * @param y second coordinate of the argument
+   * @return density of (x, y)
+   */
+  public double density(double x, double y) {
+    Matrix p = new Matrix(new double[] { x, y }, 2);
 
-	public double getMeanX() {
-		return m.get(0, 0);
-	}
+    p.minusEquals(mean);
+    Matrix inv;
+    try {
+      inv = covariance.inverse();
+    } catch ( RuntimeException e ) {
+      inv = Matrix.identity(2, 2);
+    }
+    Matrix a = p.transpose().times(inv.times(p));
+    double v1 = exp(-.5 * a.get(0, 0));
+    double v2 = sqrt(4 * PI * PI * covariance.det());
 
-	public double getMeanY() {
-		return m.get(1, 0);
-	}
+    return v1 / v2;
+  }
 
-	public double getCovariance1() {
-		return S.get(0, 0);
-	}
+  public double getMeanX() {
+    return mean.get(0, 0);
+  }
 
-	public double getCovariance2() {
-		return S.get(1, 1);
-	}
+  public double getMeanY() {
+    return mean.get(1, 0);
+  }
+
+  public double getCovariance1() {
+    return covariance.get(0, 0);
+  }
+
+  public double getCovariance2() {
+    return covariance.get(1, 1);
+  }
 }
